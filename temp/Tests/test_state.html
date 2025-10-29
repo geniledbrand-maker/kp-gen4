@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Тест состояния элементов</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { 
+            background: #f0f8ff; 
+            border: 1px solid #4a90e2; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+        }
+        .success { background: #d4edda; border-color: #28a745; }
+        .error { background: #f8d7da; border-color: #dc3545; }
+        button { 
+            padding: 10px 20px; 
+            margin: 5px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Тест функциональности сворачивания</h1>
+    
+    <div id="testResults"></div>
+    
+    <button onclick="runTests()">Запустить тесты</button>
+    <button onclick="toggleKpInfo()">Переключить КП</button>
+    <button onclick="checkCurrentState()">Проверить текущее состояние</button>
+
+    <script>
+        function runTests() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '<h2>Результаты тестов:</h2>';
+            
+            // Тест 1: Проверяем наличие элементов
+            const kpContent = document.getElementById('kpInfoContent');
+            const toggleBtn = document.querySelector('.btn-kp-info-toggle');
+            const bitrixBtn = document.querySelector('.btn-bitrix-profile');
+            
+            addTestResult('Наличие элемента kpInfoContent', !!kpContent);
+            addTestResult('Наличие кнопки переключения', !!toggleBtn);
+            addTestResult('Наличие кнопки Битрикс', !!bitrixBtn);
+            
+            // Тест 2: Проверяем начальное состояние
+            if (kpContent) {
+                const isVisible = kpContent.classList.contains('kp-info-content--visible');
+                addTestResult('Начальное состояние: форма видна', isVisible);
+            }
+            
+            // Тест 3: Проверяем функцию toggleKpInfo
+            if (typeof window.toggleKpInfo === 'function') {
+                addTestResult('Функция toggleKpInfo существует', true);
+            } else {
+                addTestResult('Функция toggleKpInfo существует', false);
+            }
+        }
+        
+        function addTestResult(testName, passed) {
+            const results = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = `test-result ${passed ? 'success' : 'error'}`;
+            div.innerHTML = `${passed ? '✅' : '❌'} ${testName}: ${passed ? 'ПРОЙДЕН' : 'ПРОВАЛЕН'}`;
+            results.appendChild(div);
+        }
+        
+        function checkCurrentState() {
+            const kpContent = document.getElementById('kpInfoContent');
+            const bitrixBtn = document.querySelector('.btn-bitrix-profile');
+            
+            if (!kpContent) {
+                alert('❌ Элемент kpInfoContent не найден!');
+                return;
+            }
+            
+            const isVisible = kpContent.classList.contains('kp-info-content--visible');
+            const isHidden = kpContent.classList.contains('kp-info-content--hidden');
+            
+            let message = `📊 Текущее состояние:\n\n`;
+            message += `• Форма КП: ${isVisible ? 'ВИДНА' : 'СКРЫТА'}\n`;
+            message += `• Класс --visible: ${isVisible}\n`;
+            message += `• Класс --hidden: ${isHidden}\n`;
+            
+            if (bitrixBtn) {
+                const btnVisible = bitrixBtn.offsetParent !== null;
+                message += `• Кнопка Битрикс: ${btnVisible ? 'ВИДНА' : 'СКРЫТА'}\n`;
+            }
+            
+            alert(message);
+        }
+        
+        // Инициализация функции toggleKpInfo (копия из ui.js)
+        (function () {
+            const SECTION_ID = "kpInfoContent";
+            const BTN_SEL = ".btn-kp-info-toggle";
+            const LS_KEY = "kpInfoOpen";
+
+            function getEls() {
+                return {
+                    section: document.getElementById(SECTION_ID),
+                    btn: document.querySelector(BTN_SEL),
+                };
+            }
+
+            function applyState(open) {
+                const { section, btn } = getEls();
+                if (!section || !btn) return;
+
+                section.classList.toggle("kp-info-content--visible", open);
+                section.classList.toggle("kp-info-content--hidden", !open);
+                
+                const arrow = btn.querySelector('.toggle-arrow');
+                if (arrow) {
+                    arrow.style.transform = open ? 'rotate(0deg)' : 'rotate(-90deg)';
+                }
+
+                btn.setAttribute("aria-expanded", String(open));
+                btn.setAttribute("aria-controls", SECTION_ID);
+
+                try { localStorage.setItem(LS_KEY, open ? "1" : "0"); } catch (_) {}
+            }
+
+            function toggleKpInfo(force) {
+                const { section } = getEls();
+                if (!section) return;
+
+                const wantOpen =
+                    typeof force === "boolean" ? force : !section.classList.contains("kp-info-content--visible");
+
+                applyState(wantOpen);
+            }
+
+            document.addEventListener("DOMContentLoaded", () => {
+                const saved =
+                    (typeof localStorage !== "undefined" && localStorage.getItem(LS_KEY)) || "0";
+                applyState(saved === "1");
+            });
+
+            window.toggleKpInfo = toggleKpInfo;
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/ajax
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/ajax/ajax_search.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets/css
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets/css/styles.css
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets/Fonts
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets/images
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets/js
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets/js/app.js
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets/js/price-math.js
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets/js/product-manager.js
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets/js/profiles.js
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets/js/sw-register.js
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets/js/ui.js
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/assets/js_backup_20251015203929.tar.gz
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/classes
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/classes/ExcelGenerator.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/classes/ExcelGenerator.php.bak.1759851562
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/classes/OrderKpService.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/classes/PdfGenerator.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/classes/ProductService.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/classes/ProfileManager.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/classes/SavedKpService.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/config
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/config/constants.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/config/permissions.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/config/price_types.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/dev
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/dev/fix_merges.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/dev/make_fresh_template.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/includes
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/includes/ajax_handler.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/includes/auth.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/includes/helpers.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/temp
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/temp/Tests
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/temp/Руководства
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/temp/Руководства/добавляем параметры в генератор для товара.txt
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/temp/Руководства/как формируются товары в генераторе.txt
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/temp/Руководства/кп и профиль менеджера.txt
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/temp/.gitkeep
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/temp/price-math.test.js
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/temp/переносной файл.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/templates
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/.gitignore
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/ajax.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/debug_ajax.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/index.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/manual.css
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/manual.php
+/home/web/vm-1d0be1a6.na4u.ru/www/local/tools/kp_gen4/service-worker.js

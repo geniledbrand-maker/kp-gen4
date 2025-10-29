@@ -1,0 +1,626 @@
+<?php
+/**
+ * Генератор Excel-документов
+ */
+
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use Bitrix\Main\Web\HttpClient;
+
+require_once $_SERVER['DOCUMENT_ROOT'] . '/local/php_interface/lib/PhpSpreadsheet/vendor/autoload.php';
+
+class ExcelGenerator {
+
+    private Spreadsheet $spreadsheet;
+    private Worksheet $sheet;
+    private array $priceTypeNames;
+    private array $tempProductsData = []; // Временное хранилище для подсчёта количества
+
+    public function __construct() {
+        if (!file_exists(TEMPLATE_XLSX)) {
+            throw new Exception('Шаблон Excel не найден: ' . TEMPLATE_XLSX);
+        }
+
+        // Загружаем шаблон
+        $reader = IOFactory::createReader('Xlsx');
+        $this->spreadsheet = $reader->load(TEMPLATE_XLSX);
+        $this->sheet = $this->spreadsheet->getActiveSheet();
+
+        // Загружаем маппинг типов цен
+        $priceConfig = require __DIR__ . '/../config/price_types.php';
+        $this->priceTypeNames = $priceConfig['ids_to_names'];
+
+        // Устанавливаем ширину колонок
+        $this->sheet->getColumnDimension('B')->setWidth(26);
+        $this->sheet->getColumnDimension('C')->setWidth(45);
+    }
+
+    // === Добавлено: поддержка плейсхолдеров в шаблоне Excel (#DATE#, #MANAGER_NAME# и т.п.)
+    private function replacePlaceholders(\PhpOffice\PhpSpreadsheet\Spreadsheet $spreadsheet, array $map): void {
+        foreach ($spreadsheet->getWorksheetIterator() as $ws) {
+            foreach ($ws->getCellCollection() as $addr) {
+                $cell = $ws->getCell($addr);
+                $val  = $cell->getValue();
+
+                if (is_string($val)) {
+                    $new = strtr($val, $map);
+                    if ($new !== $val) {
+                        $cell->setValue($new);
+                    }
+                    continue;
+                }
+                if ($val instanceof \PhpOffice\PhpSpreadsheet\RichText\RichText) {
+                    foreach ($val->getRichTextElements() as $el) {
+                        $t  = $el->getText();
+                        $nt = strtr($t, $map);
+                        if ($nt !== $t) {
+                            $el->setText($nt);
+                        }
+                    }
+                    $cell->setValue($val);
+                }
+            }
+        }
+    }
+
+    /**
+     * Генерирует Excel-файл
+     */
+    public function generate(array $productsData, array $kpInfo): void {
+        // Заполняем данные по умолчанию из профиля
+        $kpInfo = fillKpInfoDefaults(is_array($kpInfo) ? $kpInfo : []);
+
+        // Совместимость со старыми шаблонами (плейсхолдеры)
+        $this->replacePlaceholders($this->spreadsheet, [
+            '#DATE#'             => (string)($kpInfo['date'] ?? date('d.m.Y')),
+            '#CUSTOMER#'         => (string)($kpInfo['customer'] ?? ''),
+            '#OBJECT#'           => (string)($kpInfo['object'] ?? ''),
+            '#MANAGER_NAME#'     => (string)($kpInfo['manager'] ?? ''),
+            '#MANAGER_POSITION#' => (string)($kpInfo['position'] ?? ''),
+            '#MANAGER_EMAIL#'    => (string)($kpInfo['email'] ?? ''),
+            '#MANAGER_PHONE#'    => (string)($kpInfo['phone'] ?? ''),
+            '#MANAGER_COMPANY#'  => (string)($kpInfo['company'] ?? ''),
+            '#COMMENT#'          => (string)($kpInfo['comment'] ?? ''),
+        ]);
+
+        // Заполняем шапку документа (новые шаблоны — по ячейкам)
+        $this->fillHeader($kpInfo);
+
+        // Находим начало таблицы товаров
+        $headerRow = $this->findProductTableHeader();
+
+        // Заполняем товары
+        $lastRow = $this->fillProducts($productsData, $headerRow, $kpInfo);
+
+        // Добавляем футер с реквизитами
+        $this->fillFooter($lastRow + 2);
+
+        // Сохраняем и отдаём файл
+        $this->save($kpInfo);
+    }
+
+    /**
+     * Заполняет шапку документа
+     */
+    private function fillHeader(array $kpInfo): void {
+        // Дата, заказчик, объект — в колонке C
+        $this->sheet->setCellValue('C4', (string)($kpInfo['date'] ?? date('d.m.Y')));
+        $this->sheet->setCellValue('C5', (string)($kpInfo['customer'] ?? ''));
+        $this->sheet->setCellValue('C6', (string)($kpInfo['object'] ?? ''));
+
+        // Менеджер, телефон, почта — в колонке G (значения)
+        $managerLines = array_values(array_filter([
+            (string)($kpInfo['manager'] ?? ''),
+            (string)($kpInfo['position'] ?? ''),
+            (string)($kpInfo['company'] ?? ''),
+        ], function($value) {
+            return $value !== '';
+        }));
+
+        $this->sheet->setCellValue('G4', $managerLines ? implode("\n", $managerLines) : '');
+        $this->sheet->setCellValue('G5', (string)($kpInfo['phone'] ?? ''));
+        $this->sheet->setCellValue('G6', (string)($kpInfo['email'] ?? ''));
+
+        // Метки — в D (объединены с F)
+        $this->sheet->setCellValue('D4', 'Менеджер:');
+        $this->sheet->setCellValue('D5', 'Телефон менеджера:');
+        $this->sheet->setCellValue('D6', 'Почта менеджера:');
+
+        // Объединяем метки
+        $this->sheet->mergeCells('D4:F4');
+        $this->sheet->mergeCells('D5:F5');
+        $this->sheet->mergeCells('D6:F6');
+
+        // Объединяем значения
+        $this->sheet->mergeCells('G4:H4');
+        $this->sheet->mergeCells('G5:H5');
+        $this->sheet->mergeCells('G6:H6');
+
+        // Применяем стили для ячеек с данными
+        foreach (['C4', 'C5', 'C6', 'G4', 'G5', 'G6'] as $addr) {
+            $style = $this->sheet->getStyle($addr);
+            $style->getFont()->setName('Arial')->setSize(9)->setBold(false);
+            $style->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_LEFT)
+                ->setVertical(Alignment::VERTICAL_CENTER)
+                ->setWrapText(true);
+        }
+    }
+
+    /**
+     * Находит строку с заголовком таблицы товаров
+     */
+    private function findProductTableHeader(): int {
+        // Ищем строку с заголовками: "№ | Фото | Товар и параметры товара | Кол-во шт | Цена без скидки | Скидка | Ваша цена | Сумма, руб."
+        for ($row = 1; $row <= 50; $row++) {
+            $cellValue = (string)$this->sheet->getCell("C{$row}")->getValue();
+            if (stripos($cellValue, 'Товар и параметры товара') !== false) {
+                return $row;
+            }
+        }
+
+        // По умолчанию возвращаем строку 8 (если не нашли)
+        return 8;
+    }
+
+    /**
+     * Заполняет товары
+     */
+    private function fillProducts(array $productsData, int $headerRow, array $kpInfo): int {
+        $this->tempProductsData = $productsData; // Сохраняем для подсчёта количества в fillTotals
+
+        $firstDataRow = $headerRow + 1;
+        $nProducts = count($productsData);
+        $totalWithoutDiscount = 0.0;
+        $totalWithDiscount = 0.0;
+
+        foreach ($productsData as $i => $product) {
+            // Каждый товар занимает 2 строки (название + параметры)
+            $row = $firstDataRow + ($i * 2);
+
+            // Извлекаем данные товара
+            $name = str_replace('°', '', (string)($product['name'] ?? ''));
+            $article = (string)($product['article'] ?? '');
+            $measure = (string)($product['measure'] ?? 'шт');
+            $quantity = max(1, (int)($product['quantity'] ?? 1));
+
+            // Цены
+            $priceWithoutDiscount = (float)($product['price_without_discount'] ?? 0);
+            $yourPrice = (float)($product['your_price'] ?? $priceWithoutDiscount); // Если ваша цена не задана, используем цену без скидки
+
+            // Безопасное вычисление скидки
+            if ($priceWithoutDiscount != 0) {
+                $discountPercent = round((($priceWithoutDiscount - $yourPrice) / $priceWithoutDiscount) * 100, 2);
+            } else {
+                $discountPercent = 0.0;
+            }
+
+            $sum = $quantity * $yourPrice; // Сумма считается по "вашей цене"
+            $totalWithoutDiscount += $quantity * $priceWithoutDiscount;
+            $totalWithDiscount += $sum;
+
+            $imageUrl = (string)($product['image'] ?? '');
+            $priceTypeId = (int)($product['price_type_id'] ?? DEFAULT_PRICE_TYPE_ID);
+            $priceTypeName = $this->priceTypeNames[$priceTypeId] ?? '';
+            $props = is_array($product['props'] ?? null) ? $product['props'] : [];
+            $url = (string)($product['url'] ?? '');
+
+            // Заполняем ячейки
+            $this->fillProductRow($row, $i + 1, $name, $article, $measure, $quantity, $priceWithoutDiscount, $discountPercent, $yourPrice, $sum, $imageUrl, $priceTypeName, $props, $url);
+        }
+
+        // Итоги — заполняем существующую секцию или создаём новую
+        $totalRow = $firstDataRow + ($nProducts * 2);
+        $this->fillTotals($totalRow, $totalWithoutDiscount, $totalWithDiscount);
+
+        // Комментарий
+        $commentRow = $totalRow + 2;
+        $this->fillComment($commentRow, $kpInfo);
+
+        return $commentRow + 2; // Возвращаем последнюю использованную строку
+    }
+
+    /**
+     * Заполняет строку товара
+     */
+    private function fillProductRow(
+        int $row,
+        int $index,
+        string $name,
+        string $article,
+        string $measure,
+        int $quantity,
+        float $priceWithoutDiscount,
+        float $discountPercent,
+        float $yourPrice,
+        float $sum,
+        string $imageUrl,
+        string $priceTypeName,
+        array $props,
+        string $url
+    ): void {
+        $paramsRow = $row + 1;
+
+        // A - Номер
+        $this->sheet->setCellValue("A{$row}", $index);
+        $this->sheet->mergeCells("A{$row}:A{$paramsRow}");
+
+        // B - Изображение
+        if ($imageUrl !== '') {
+            $this->insertImage($imageUrl, "B{$row}", $index);
+        }
+        $this->sheet->mergeCells("B{$row}:B{$paramsRow}");
+
+        // C - Название товара (жирное, фиолетовое, кликабельное)
+        $nameCell = "C{$row}";
+        $this->sheet->setCellValue($nameCell, $name);
+        $nameStyle = $this->sheet->getStyle($nameCell);
+        $nameStyle->getFont()->setBold(true)->setSize(10)->setUnderline(true)->getColor()->setARGB('FF722e85');
+        $nameStyle->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_LEFT)
+            ->setVertical(Alignment::VERTICAL_CENTER)
+            ->setWrapText(true);
+
+        if ($url !== '') {
+            $this->sheet->getCell($nameCell)->getHyperlink()->setUrl($url);
+        }
+
+        // C(след.строка) - Артикул и параметры
+        $paramsText = "Артикул: {$article}\n\nПараметры:\n";
+        $paramsList = [
+            'Цветовая температура, К' => str_replace('°', '', (string)($props['ct'] ?? '')),
+            'Электропотребление, Вт' => str_replace('°', '', (string)($props['pwr'] ?? '')),
+            'Степень пылевлагозащиты' => str_replace('°', '', (string)($props['ip'] ?? '')),
+            'Индекс цветопередачи, Ra' => str_replace('°', '', (string)($props['cri'] ?? '')),
+        ];
+
+        if ($priceTypeName !== '') {
+            $paramsList['Тип цены'] = $priceTypeName;
+        }
+
+        foreach ($paramsList as $label => $value) {
+            $paramsText .= $label . ': ' . ($value !== '' ? $value : '—') . "\n";
+        }
+
+        $paramsCell = "C{$paramsRow}";
+        $this->sheet->setCellValue($paramsCell, trim($paramsText));
+        $paramsStyle = $this->sheet->getStyle($paramsCell);
+        $paramsStyle->getFont()->setSize(10)->setBold(false);
+        $paramsStyle->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_LEFT)
+            ->setVertical(Alignment::VERTICAL_TOP)
+            ->setWrapText(true);
+
+        // Объединяем C..D
+        $this->sheet->mergeCells("C{$paramsRow}:D{$paramsRow}");
+
+        // D - Количество
+        $this->sheet->setCellValue("D{$row}", $quantity . ' ' . $measure);
+        $this->sheet->mergeCells("D{$row}:D{$paramsRow}");
+
+        // E - Цена без скидки
+        $this->sheet->setCellValue("E{$row}", $priceWithoutDiscount);
+        $this->sheet->getStyle("E{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+        $this->sheet->mergeCells("E{$row}:E{$paramsRow}");
+
+        // F - Скидка
+        $this->sheet->setCellValue("F{$row}", $discountPercent . '%');
+        $this->sheet->mergeCells("F{$row}:F{$paramsRow}");
+
+        // G - Ваша цена
+        $this->sheet->setCellValue("G{$row}", $yourPrice);
+        $this->sheet->getStyle("G{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+        $this->sheet->mergeCells("G{$row}:G{$paramsRow}");
+
+        // H - Сумма
+        $this->sheet->setCellValue("H{$row}", $sum);
+        $this->sheet->getStyle("H{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+        $this->sheet->mergeCells("H{$row}:H{$paramsRow}");
+
+        // Высота строк
+        $nameLines = max(1, ceil(mb_strlen($name) / 50));
+        $this->sheet->getRowDimension($row)->setRowHeight($nameLines * 20);
+        $this->sheet->getRowDimension($paramsRow)->setRowHeight(140);
+
+        // Применяем границы после всех объединений
+        $borderStyle = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['argb' => 'FF000000'],
+                ],
+            ],
+        ];
+        $this->sheet->getStyle("A{$row}:H{$paramsRow}")->applyFromArray($borderStyle);
+    }
+
+    /**
+     * Вставляет изображение товара
+     */
+    private function insertImage(string $imageUrl, string $cell, int $index): void {
+        try {
+            $client = new HttpClient(['timeout' => 5, 'streamTimeout' => 5]);
+            if ($client->get($imageUrl)) {
+                $bin = $client->getResult();
+                $ct = (string)$client->getHeaders()->get('Content-Type');
+
+                $ext = 'jpg';
+                if (preg_match('~image/(jpe?g|png|gif|webp)~i', $ct, $m)) {
+                    $ext = strtolower($m[1]);
+                    if ($ext === 'jpeg') $ext = 'jpg';
+                }
+
+                if (!file_exists(TEMP_DIR)) {
+                    @mkdir(TEMP_DIR, 0755, true);
+                }
+
+                $imgPath = TEMP_DIR . 'img_' . $index . '.' . $ext;
+                file_put_contents($imgPath, $bin);
+
+                $drawing = new Drawing();
+                $drawing->setPath($imgPath);
+                $drawing->setCoordinates($cell);
+                $drawing->setHeight(180);
+                $drawing->setOffsetX(5);
+                $drawing->setOffsetY(5);
+                $drawing->setWorksheet($this->sheet);
+            }
+        } catch (\Throwable $e) {
+            // Игнорируем ошибки загрузки изображений
+        }
+    }
+
+    /**
+     * Находит секцию с итогами в шаблоне
+     */
+    private function findTotalsSection(): ?int {
+        // Ищем строку с текстом "ИТОГИ:"
+        for ($row = 1; $row <= 100; $row++) {
+            for ($col = 'A'; $col <= 'H'; $col++) {
+                $cellValue = (string)$this->sheet->getCell("{$col}{$row}")->getValue();
+                if (stripos($cellValue, 'ИТОГИ') !== false) {
+                    return $row;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Заполняет итоги в существующей секции шаблона
+     */
+    private function fillTotals(int $afterProductsRow, float $totalWithoutDiscount, float $totalWithDiscount): void {
+        $economy = $totalWithoutDiscount - $totalWithDiscount;
+        $nds = $totalWithDiscount * 20 / 120;
+
+        // Ищем секцию итогов в шаблоне
+        $totalsRow = $this->findTotalsSection();
+
+        if ($totalsRow === null) {
+            // Если секции нет, создаём простую
+            $row = $afterProductsRow;
+            $this->sheet->setCellValue("C{$row}", 'Всего товаров:');
+            $this->sheet->setCellValue("D{$row}", count($this->getTempProductsData()));
+            $this->sheet->mergeCells("D{$row}:H{$row}");
+            $row++;
+            $this->sheet->setCellValue("C{$row}", 'Сумма без скидки:');
+            $this->sheet->setCellValue("D{$row}", $totalWithoutDiscount);
+            $this->sheet->getStyle("D{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+            $this->sheet->mergeCells("D{$row}:H{$row}");
+            $row++;
+            $this->sheet->setCellValue("C{$row}", '👉 ВЫ ЭКОНОМИТЕ:');
+            if ($totalWithoutDiscount != 0) {
+                $economyText = number_format($economy, 0, '.', ' ') . ' руб (' . round($economy / $totalWithoutDiscount * 100, 0) . '%)';
+            } else {
+                $economyText = number_format($economy, 0, '.', ' ') . ' руб (0%)';
+            }
+            $this->sheet->setCellValue("D{$row}", $economyText);
+            $this->sheet->mergeCells("D{$row}:H{$row}");
+            $row++;
+            $this->sheet->setCellValue("C{$row}", 'Итого к оплате:');
+            $totalWithDiscountText = number_format($totalWithDiscount, 0, '.', ' ') . ' руб✅';
+            $this->sheet->setCellValue("D{$row}", $totalWithDiscountText);
+            $this->sheet->mergeCells("D{$row}:H{$row}");
+            $row++;
+            $this->sheet->setCellValue("C{$row}", 'В том числе НДС 20%');
+            $ndsText = number_format($nds, 0, '.', ' ') . ' руб';
+            $this->sheet->setCellValue("D{$row}", $ndsText);
+            $this->sheet->mergeCells("D{$row}:H{$row}");
+            return;
+        }
+
+        // Если нужно переместить секцию ближе к товарам
+        $targetRow = $afterProductsRow;
+        if ($totalsRow < $targetRow) {
+            // Пока просто заполняем на месте
+            $targetRow = $totalsRow;
+        }
+
+        // Ищем и заполняем конкретные поля в секции итогов
+        for ($row = $targetRow; $row <= $targetRow + 20; $row++) {
+            for ($col = 'A'; $col <= 'H'; $col++) {
+                $cellValue = (string)$this->sheet->getCell("{$col}{$row}")->getValue();
+
+                // Всего товаров (количество)
+                if (stripos($cellValue, 'Всего товаров') !== false && stripos($cellValue, ':') !== false) {
+                    $valueCol = chr(ord($col) + 1);
+                    if ($valueCol <= 'H') {
+                        $this->sheet->setCellValue("{$valueCol}{$row}", count($this->getTempProductsData()));
+                        $this->sheet->mergeCells("{$valueCol}{$row}:H{$row}");
+                    }
+                }
+
+                // Сумма без скидки
+                if (stripos($cellValue, 'Сумма без скидки') !== false) {
+                    $valueCol = chr(ord($col) + 1);
+                    if ($valueCol <= 'H') {
+                        $this->sheet->setCellValue("{$valueCol}{$row}", $totalWithoutDiscount);
+                        $this->sheet->getStyle("{$valueCol}{$row}")->getNumberFormat()->setFormatCode('#,##0.00');
+                        $this->sheet->mergeCells("{$valueCol}{$row}:H{$row}");
+                    }
+                }
+
+                // Вы экономите
+                if (stripos($cellValue, 'ЭКОНОМИТЕ') !== false || stripos($cellValue, 'экономите') !== false) {
+                    $valueCol = chr(ord($col) + 1);
+                    if ($valueCol <= 'H') {
+                        if ($totalWithoutDiscount != 0) {
+                            $economyText = number_format($economy, 0, '.', ' ') . ' руб (' . round($economy / $totalWithoutDiscount * 100, 0) . '%)';
+                        } else {
+                            $economyText = number_format($economy, 0, '.', ' ') . ' руб (0%)';
+                        }
+                        $this->sheet->setCellValue("{$valueCol}{$row}", $economyText);
+                        $this->sheet->mergeCells("{$valueCol}{$row}:H{$row}");
+                    }
+                }
+
+                // Итого к оплате
+                if (stripos($cellValue, 'Итого к оплате') !== false) {
+                    $valueCol = chr(ord($col) + 1);
+                    if ($valueCol <= 'H') {
+                        $totalWithDiscountText = number_format($totalWithDiscount, 0, '.', ' ') . ' руб✅';
+                        $this->sheet->setCellValue("{$valueCol}{$row}", $totalWithDiscountText);
+                        $this->sheet->mergeCells("{$valueCol}{$row}:H{$row}");
+                    }
+                }
+
+                // НДС 20%
+                if (stripos($cellValue, 'НДС') !== false && stripos($cellValue, '20') !== false) {
+                    $valueCol = chr(ord($col) + 1);
+                    if ($valueCol <= 'H') {
+                        $ndsText = number_format($nds, 0, '.', ' ') . ' руб';
+                        $this->sheet->setCellValue("{$valueCol}{$row}", $ndsText);
+                        $this->sheet->mergeCells("{$valueCol}{$row}:H{$row}");
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Возвращает временные данные о товарах
+     */
+    private function getTempProductsData(): array {
+        return $this->tempProductsData;
+    }
+
+    /**
+     * Заполняет комментарий
+     */
+    private function fillComment(int $row, array $kpInfo): void {
+        $commentText = trim((string)($kpInfo['comment'] ?? ''));
+
+        if ($commentText === '') {
+            return; // Пропускаем пустой комментарий
+        }
+
+        $commentCell = "A{$row}";
+        $baseComment = 'Комментарий:';
+        $fullText = $baseComment . "\n" . $commentText;
+
+        $this->sheet->setCellValue($commentCell, $fullText);
+        // Объединяем A..H на 3 строки
+        $this->sheet->mergeCells("A{$row}:H" . ($row + 2));
+
+        $style = $this->sheet->getStyle($commentCell);
+        $style->getFont()->setSize(9);
+        $style->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_LEFT)
+            ->setVertical(Alignment::VERTICAL_TOP)
+            ->setWrapText(true);
+
+        // Рассчитываем высоту
+        $lineCount = substr_count($fullText, "\n") + 1;
+        $avgCharsPerLine = 100;
+
+        foreach (explode("\n", $fullText) as $line) {
+            if (mb_strlen($line) > $avgCharsPerLine) {
+                $lineCount += floor(mb_strlen($line) / $avgCharsPerLine);
+            }
+        }
+
+        $rowHeight = max(30, $lineCount * 15);
+        $this->sheet->getRowDimension($row)->setRowHeight($rowHeight);
+        $this->sheet->getRowDimension($row + 1)->setRowHeight($rowHeight);
+        $this->sheet->getRowDimension($row + 2)->setRowHeight($rowHeight);
+    }
+
+    /**
+     * Добавляет футер с реквизитами компании
+     */
+    private function fillFooter(int $startRow): void {
+        $row = $startRow;
+
+        // Заголовок
+        $this->sheet->setCellValue("A{$row}", 'Карта предприятия ООО «ИнПродакшн»');
+        $this->sheet->mergeCells("A{$row}:H{$row}");
+        $this->sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(12);
+        $this->sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $row++;
+
+        // Реквизиты
+        $requisites = [
+            ['Полное наименование организации(в соответствии с учредительными документами)', 'Общество с ограниченной ответственностью «ИнПродакшн»'],
+            ['Краткое наименование', 'ООО «ИнПродакшн»'],
+            ['Генеральный директор', 'Вагин Константин Евгеньевич'],
+            ['Действует на основании', 'Устав'],
+            ['Юридический адрес', '620085 Свердловская область, г.о. город Екатеринбург, г. Екатеринбург, ул. 8 Марта, д. 267, помещ. 11/1'],
+            ['ИНН', '6671026720'],
+            ['КПП', '667901001'],
+            ['Расчетный счет', '40702810900810005883'],
+            ['Банк', 'Филиал "Центральный" Банка ВТБ (ПАО)'],
+            ['Корреспондентский счет', '30101810145250000000'],
+            ['БИК', '44525411'],
+            ['ОКПО', '44138067'],
+            ['ОКВЭД', '27.40, 32.99, 46.15.3, 46.43.1, 46.47.2, 47.59'],
+            ['ОГРН', '1156658089587'],
+            ['Телефон', '+7(343) 344-44-00; 8(800)222-71-10'],
+            ['Электронная почта', 'info@in-prod.ru; info@geniled.ru'],
+            ['Абонентский ящик для отправки корреспонденции', '620016, г. Екатеринбург, а/я 155'],
+        ];
+
+        foreach ($requisites as $item) {
+            $this->sheet->setCellValue("A{$row}", $item[0]);
+            $this->sheet->setCellValue("D{$row}", $item[1]);
+            $this->sheet->mergeCells("D{$row}:H{$row}");
+
+            $this->sheet->getStyle("A{$row}")->getFont()->setSize(9);
+            $this->sheet->getStyle("D{$row}")->getFont()->setSize(9);
+            $this->sheet->getStyle("A{$row}")->getAlignment()->setWrapText(true);
+            $this->sheet->getStyle("D{$row}")->getAlignment()->setWrapText(true);
+
+            $row++;
+        }
+    }
+
+    /**
+     * Сохраняет и отдаёт файл
+     */
+    private function save(array $kpInfo): void {
+        $customerName = ($kpInfo['customer'] ?? '') ? preg_replace('~[^-_0-9а-яa-z ]~ui', '', $kpInfo['customer']) : 'client';
+        $filename = 'KP_' . $customerName . '_' . date('Ymd_His') . '.xlsx';
+        $filepath = TEMP_DIR . $filename;
+
+        $writer = IOFactory::createWriter($this->spreadsheet, 'Xlsx');
+        $writer->save($filepath);
+
+        // Отдаём файл
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        readfile($filepath);
+
+        // Очистка
+        @unlink($filepath);
+        foreach (glob(TEMP_DIR . 'img_*.*') as $f) {
+            @unlink($f);
+        }
+        $this->spreadsheet->disconnectWorksheets();
+        unset($this->spreadsheet);
+    }
+}

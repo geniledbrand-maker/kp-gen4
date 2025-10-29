@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Массовое добавление - Enhanced</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .bulk-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .bulk-header {
+            background: linear-gradient(135deg, #722e85 0%, #a855f7 100%);
+            color: white;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .bulk-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bulk-stats {
+            display: flex;
+            gap: 16px;
+            font-size: 13px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .bulk-body {
+            padding: 24px;
+        }
+
+        .help-banner {
+            background: #f3eef9;
+            border: 1px solid #d0bce0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            gap: 12px;
+            align-items: start;
+        }
+
+        .help-banner svg {
+            flex-shrink: 0;
+            color: #722e85;
+        }
+
+        .help-content {
+            flex: 1;
+        }
+
+        .help-title {
+            font-weight: 600;
+            color: #722e85;
+            margin-bottom: 4px;
+        }
+
+        .help-examples {
+            font-size: 13px;
+            color: #666;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .example-code {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #722e85;
+            border: 1px solid #d0bce0;
+        }
+
+        .textarea-wrapper {
+            position: relative;
+            border: 2px dashed #d0bce0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .textarea-wrapper.dragover {
+            border-color: #722e85;
+            background: #f3eef9;
+            transform: scale(1.01);
+        }
+
+        .textarea-wrapper.has-content {
+            border-style: solid;
+            border-color: #722e85;
+            background: white;
+        }
+
+        #bulkTextarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            background: transparent;
+            color: #222;
+            outline: none;
+        }
+
+        #bulkTextarea::placeholder {
+            color: #999;
+        }
+
+        .dropzone-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(114, 46, 133, 0.05);
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .textarea-wrapper.dragover .dropzone-overlay {
+            display: flex;
+        }
+
+        .dropzone-content {
+            text-align: center;
+            color: #722e85;
+        }
+
+        .dropzone-content svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 8px;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            padding: 6px 12px;
+            border: 1px solid #d0bce0;
+            border-radius: 6px;
+            background: white;
+            color: #722e85;
+            font-size: 13px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .quick-btn:hover {
+            background: #f3eef9;
+            border-color: #722e85;
+            transform: translateY(-1px);
+        }
+
+        .quick-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .options-row {
+            display: flex;
+            gap: 16px;
+            margin-top: 16px;
+            padding: 12px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .preview-section {
+            margin-top: 16px;
+            padding: 16px;
+            background: #f9f6fb;
+            border: 1px solid #d0bce0;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .preview-section.visible {
+            display: block;
+        }
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .preview-title {
+            font-weight: 600;
+            color: #722e85;
+            font-size: 14px;
+        }
+
+        .preview-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 6px;
+            padding: 8px;
+        }
+
+        .preview-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        .preview-item:last-child {
+            border-bottom: none;
+        }
+
+        .preview-item.exists {
+            background: #fff3cd;
+        }
+
+        .preview-item.error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .preview-article {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+
+        .preview-qty {
+            color: #666;
+            margin-left: 8px;
+        }
+
+        .preview-status {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #e0e0e0;
+        }
+
+        .preview-status.exists {
+            background: #ff9800;
+            color: white;
+        }
+
+        .preview-status.error {
+            background: #d32f2f;
+            color: white;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #722e85 0%, #a855f7 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(114, 46, 133, 0.3);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #722e85;
+            border: 2px solid #d0bce0;
+        }
+
+        .btn-secondary:hover {
+            background: #f3eef9;
+            border-color: #722e85;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .templates-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .templates-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            background: white;
+            border: 1px solid #d0bce0;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 200px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .templates-menu.open {
+            display: block;
+        }
+
+        .template-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .template-item:last-child {
+            border-bottom: none;
+        }
+
+        .template-item:hover {
+            background: #f3eef9;
+        }
+
+        .template-name {
+            font-weight: 600;
+            color: #722e85;
+        }
+
+        .template-count {
+            font-size: 11px;
+            color: #666;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+<div class="bulk-container">
+    <div class="bulk-header">
+        <h2>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M9 9h6M9 13h6M9 17h6"/>
+            </svg>
+            Массовое добавление товаров
+        </h2>
+        <div class="bulk-stats">
+            <div class="stat-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <path d="M14 2v6h6"/>
+                    <path d="M9 15h6"/>
+                </svg>
+                <span id="lineCount">0 строк</span>
+            </div>
+            <div class="stat-item">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="8.5" cy="7" r="4"/>
+                    <path d="M20 8v6M23 11h-6"/>
+                </svg>
+                <span id="articleCount">0 артикулов</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bulk-body">
+        <div class="help-banner">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4M12 8h.01"/>
+            </svg>
+            <div class="help-content">
+                <div class="help-title">Поддерживаемые форматы:</div>
+                <div class="help-examples">
+                    <span class="example-code">APT123</span>
+                    <span class="example-code">APT123 x 5</span>
+                    <span class="example-code">APT123;10</span>
+                    <span class="example-code">APT123 * 3</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="textarea-wrapper" id="textareaWrapper">
+                <textarea
+                        id="bulkTextarea"
+                        placeholder="Вставьте артикулы построчно или перетащите файл сюда...&#10;&#10;Примеры:&#10;APT123&#10;APT456 x 2&#10;APT789;5"
+                ></textarea>
+            <div class="dropzone-overlay">
+                <div class="dropzone-content">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <div style="font-weight: 600;">Отпустите файл для загрузки</div>
+                    <div style="font-size: 12px; color: #999; margin-top: 4px;">Поддерживаются: .txt, .csv, .xlsx</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <button class="quick-btn" id="btnUploadFile">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Загрузить файл
+            </button>
+
+            <button class="quick-btn" id="btnClearText">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                Очистить
+            </button>
+
+            <button class="quick-btn" id="btnFormatText">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="16 18 22 12 16 6"/>
+                    <polyline points="8 6 2 12 8 18"/>
+                </svg>
+                Форматировать
+            </button>
+
+            <div class="templates-dropdown">
+                <button class="quick-btn" id="btnTemplates">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    Шаблоны ▼
+                </button>
+                <div class="templates-menu" id="templatesMenu">
+                    <div class="template-item" data-template="led">
+                        <div class="template-name">LED панели (офис)</div>
+                        <div class="template-count">8 позиций</div>
+                    </div>
+                    <div class="template-item" data-template="outdoor">
+                        <div class="template-name">Уличное освещение</div>
+                        <div class="template-count">12 позиций</div>
+                    </div>
+                    <div class="template-item" data-template="warehouse">
+                        <div class="template-name">Склад (стандарт)</div>
+                        <div class="template-count">15 позиций</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="options-row">
+            <label class="checkbox-label">
+                <input type="checkbox" id="addAsSeparate">
+                <span>Добавлять дубли как отдельные позиции</span>
+            </label>
+
+            <label class="checkbox-label">
+                <input type="checkbox" id="autoValidate" checked>
+                <span>Проверять наличие перед добавлением</span>
+            </label>
+        </div>
+
+        <div class="preview-section" id="previewSection">
+            <div class="preview-header">
+                <div class="preview-title">📋 Предпросмотр (будет добавлено):</div>
+                <button class="quick-btn" id="btnClosePreview" style="padding: 4px 8px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="preview-list" id="previewList">
+                <!-- Динамический контент -->
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-secondary" id="btnCancel">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+                Отменить
+            </button>
+
+            <button class="btn btn-primary" id="btnAddFromList">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Добавить из списка
+            </button>
+        </div>
+    </div>
+</div>
+
+<input type="file" id="fileInput" class="file-input" accept=".txt,.csv,.xlsx,.xls">
+
+<script>
+    // Шаблоны
+    const templates = {
+        led: `APT001 x 10
+APT002 x 5
+APT003
+APT004 x 2
+APT005 x 8
+APT006 x 3
+APT007 x 15
+APT008 x 4`,
+        outdoor: `APT101 x 20
+APT102 x 15
+APT103 x 10
+APT104 x 8
+APT105 x 12
+APT106 x 6
+APT107 x 25
+APT108 x 18
+APT109 x 10
+APT110 x 14
+APT111 x 7
+APT112 x 9`,
+        warehouse: `APT201 x 30
+APT202 x 25
+APT203 x 20
+APT204 x 15
+APT205 x 40
+APT206 x 10
+APT207 x 35
+APT208 x 22
+APT209 x 18
+APT210 x 28
+APT211 x 12
+APT212 x 16
+APT213 x 24
+APT214 x 19
+APT215 x 11`
+    };
+
+    const textarea = document.getElementById('bulkTextarea');
+    const textareaWrapper = document.getElementById('textareaWrapper');
+    const lineCount = document.getElementById('lineCount');
+    const articleCount = document.getElementById('articleCount');
+    const previewSection = document.getElementById('previewSection');
+    const previewList = document.getElementById('previewList');
+    const btnAddFromList = document.getElementById('btnAddFromList');
+    const btnCancel = document.getElementById('btnCancel');
+    const btnClearText = document.getElementById('btnClearText');
+    const btnFormatText = document.getElementById('btnFormatText');
+    const btnUploadFile = document.getElementById('btnUploadFile');
+    const btnTemplates = document.getElementById('btnTemplates');
+    const btnClosePreview = document.getElementById('btnClosePreview');
+    const templatesMenu = document.getElementById('templatesMenu');
+    const fileInput = document.getElementById('fileInput');
+    const autoValidate = document.getElementById('autoValidate');
+
+    // Обновление счётчиков
+    function updateStats() {
+        const text = textarea.value.trim();
+        const lines = text ? text.split('\n').filter(l => l.trim()).length : 0;
+        const articles = text ? text.split('\n').filter(l => l.trim()).length : 0;
+
+        lineCount.textContent = `${lines} ${lines === 1 ? 'строка' : lines < 5 ? 'строки' : 'строк'}`;
+        articleCount.textContent = `${articles} ${articles === 1 ? 'артикул' : articles < 5 ? 'артикула' : 'артикулов'}`;
+
+        if (text) {
+            textareaWrapper.classList.add('has-content');
+        } else {
+            textareaWrapper.classList.remove('has-content');
+        }
+
+        // Автоматический превью если включена валидация
+        if (autoValidate.checked && text) {
+            showPreview();
+        }
+    }
+
+    textarea.addEventListener('input', updateStats);
+    autoValidate.addEventListener('change', () => {
+        if (autoValidate.checked && textarea.value.trim()) {
+            showPreview();
+        } else {
+            previewSection.classList.remove('visible');
+        }
+    });
+
+    // Drag & Drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        textareaWrapper.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        textareaWrapper.addEventListener(eventName, () => {
+            textareaWrapper.classList.add('dragover');
+        });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        textareaWrapper.addEventListener(eventName, () => {
+            textareaWrapper.classList.remove('dragover');
+        });
+    });
+
+    textareaWrapper.addEventListener('drop', handleDrop);
+
+    function handleDrop(e) {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    }
+
+    // Загрузка файла
+    btnUploadFile.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    function handleFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            textarea.value = e.target.result;
+            updateStats();
+            alert(`Файл "${file.name}" загружен!\nНайдено строк: ${textarea.value.split('\n').length}`);
+        };
+        reader.readAsText(file);
+    }
+
+    // Очистка
+    btnClearText.addEventListener('click', () => {
+        if (confirm('Очистить поле ввода?')) {
+            textarea.value = '';
+            updateStats();
+            previewSection.classList.remove('visible');
+        }
+    });
+
+    // Форматирование
+    btnFormatText.addEventListener('click', () => {
+        const lines = textarea.value.split('\n');
+        const formatted = lines
+            .map(line => line.trim())
+            .filter(line => line)
+            .map(line => {
+                // Нормализуем формат к "АРТИКУЛ x КОЛИЧЕСТВО"
+                const match = line.match(/^(.+?)[\s;x*]+(\d+)$/i);
+                if (match) {
+                    return `${match[1].trim()} x ${match[2]}`;
+                }
+                return line;
+            })
+            .join('\n');
+
+        textarea.value = formatted;
+        updateStats();
+    });
+
+    // Шаблоны
+    btnTemplates.addEventListener('click', (e) => {
+        e.stopPropagation();
+        templatesMenu.classList.toggle('open');
+    });
+
+    document.addEventListener('click', () => {
+        templatesMenu.classList.remove('open');
+    });
+
+    document.querySelectorAll('.template-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const template = item.dataset.template;
+            textarea.value = templates[template];
+            updateStats();
+            templatesMenu.classList.remove('open');
+        });
+    });
+
+    // Превью
+    function showPreview() {
+        const text = textarea.value.trim();
+        if (!text) {
+            previewSection.classList.remove('visible');
+            return;
+        }
+
+        const lines = text.split('\n').filter(l => l.trim());
+        previewList.innerHTML = '';
+
+        lines.forEach((line, index) => {
+            const item = document.createElement('div');
+            item.className = 'preview-item';
+
+            let article = line.trim();
+            let quantity = 1;
+            const match = line.match(/^(.+?)[\s;x*]+(\d+)$/i);
+            if (match) {
+                article = match[1].trim();
+                quantity = parseInt(match[2], 10);
+            }
+
+            // Проверка (имитация)
+            const exists = Math.random() > 0.8; // 20% шанс что уже в КП
+            if (exists) {
+                item.classList.add('exists');
+            }
+
+            item.innerHTML = `
+                    <div>
+                        <span class="preview-article">${article}</span>
+                        <span class="preview-qty">× ${quantity}</span>
+                    </div>
+                    ${exists ? '<span class="preview-status exists">Уже в КП</span>' : '<span class="preview-status">Новый</span>'}
+                `;
+
+            previewList.appendChild(item);
+        });
+
+        previewSection.classList.add('visible');
+    }
+
+    btnClosePreview.addEventListener('click', () => {
+        previewSection.classList.remove('visible');
+    });
+
+    // Добавление
+    btnAddFromList.addEventListener('click', () => {
+        const text = textarea.value.trim();
+        if (!text) {
+            alert('Введите артикулы!');
+            return;
+        }
+
+        const lines = text.split('\n').filter(l => l.trim()).length;
+        if (confirm(`Добавить ${lines} ${lines === 1 ? 'позицию' : lines < 5 ? 'позиции' : 'позиций'}?`)) {
+            // Здесь вызов функции addMultiple() из основного кода
+            alert(`✅ Добавлено ${lines} позиций!\n\n(В реальном приложении здесь вызывается функция addMultiple())`);
+            textarea.value = '';
+            updateStats();
+            previewSection.classList.remove('visible');
+        }
+    });
+
+    // Отмена
+    btnCancel.addEventListener('click', () => {
+        if (textarea.value.trim() && !confirm('Закрыть без добавления?')) {
+            return;
+        }
+        // Здесь логика закрытия модального окна
+        alert('Закрыто');
+    });
+
+    // Горячие клавиши
+    textarea.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') {
+            btnAddFromList.click();
+        }
+    });
+</script>
+</body>
+</html>
