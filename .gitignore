@@ -1,0 +1,17 @@
+# Кэш и временные файлы
+temp/
+*.log
+*.cache
+
+# Системные
+.idea/
+.vscode/
+.DS_Store
+
+# Файлы Excel и PDF-шаблонов (если генерируются автоматически)
+templates/excel/*.xlsx
+templates/pdf/*.pdf
+
+# node_modules (если используешь npm/yarn)
+node_modules/
+

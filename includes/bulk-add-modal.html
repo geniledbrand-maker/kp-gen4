@@ -1,0 +1,181 @@
+<!-- ============================================================
+     МОДАЛЬНОЕ ОКНО МАССОВОГО ДОБАВЛЕНИЯ ТОВАРОВ (Enhanced)
+     ============================================================ -->
+<div id="bulkAddModal" class="modal-overlay bulk-modal-overlay">
+    <div class="modal-content bulk-modal-content" onclick="event.stopPropagation()">
+        <!-- Кнопка закрытия -->
+        <button class="modal-close-btn bulk-modal-close" onclick="closeBulkAddModal()">&times;</button>
+
+        <!-- Заголовок с иконкой и статистикой -->
+        <div class="bulk-header">
+            <div class="bulk-header-left">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M9 9h6M9 13h6M9 17h6"/>
+                </svg>
+                <h2>Массовое добавление товаров</h2>
+            </div>
+            <div class="bulk-stats">
+                <div class="stat-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <path d="M14 2v6h6"/>
+                        <path d="M9 15h6"/>
+                    </svg>
+                    <span id="bulkLineCount">0 строк</span>
+                </div>
+                <div class="stat-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="8.5" cy="7" r="4"/>
+                        <path d="M20 8v6M23 11h-6"/>
+                    </svg>
+                    <span id="bulkArticleCount">0 артикулов</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основное содержимое -->
+        <div class="bulk-body">
+            <!-- Подсказка с примерами форматов -->
+            <div class="help-banner">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 16v-4M12 8h.01"/>
+                </svg>
+                <div class="help-content">
+                    <div class="help-title">Поддерживаемые форматы:</div>
+                    <div class="help-examples">
+                        <span class="example-code">08575</span>
+                        <span class="example-code">08575_smart x 5</span>
+                        <span class="example-code">08575;10</span>
+                        <span class="example-code">08575 * 3</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Текстовое поле с Drag & Drop -->
+            <div class="textarea-wrapper" id="bulkTextareaWrapper">
+                <textarea
+                        id="bulkModalTextarea"
+                        placeholder="Вставьте артикулы построчно или перетащите файл сюда...&#10;&#10;Примеры:&#10;08575&#10;08575 x 2&#10;08575;5"
+                ></textarea>
+                <div class="dropzone-overlay">
+                    <div class="dropzone-content">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <div style="font-weight: 600;">Отпустите файл для загрузки</div>
+                        <div style="font-size: 12px; color: #999; margin-top: 4px;">Поддерживаются: .txt, .csv, .xlsx</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Панель быстрых действий -->
+            <div class="quick-actions">
+                <button class="quick-btn" id="btnBulkUploadFile">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    Загрузить файл
+                </button>
+
+                <button class="quick-btn" id="btnBulkClearText">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    Очистить
+                </button>
+
+                <button class="quick-btn" id="btnBulkFormatText">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 18 22 12 16 6"/>
+                        <polyline points="8 6 2 12 8 18"/>
+                    </svg>
+                    Форматировать
+                </button>
+
+                <div class="templates-dropdown">
+                    <button class="quick-btn" id="btnBulkTemplates">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17 21 17 13 7 13 7 21"/>
+                            <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Шаблоны ▼
+                    </button>
+                    <div class="templates-menu" id="bulkTemplatesMenu">
+                        <div class="template-item" data-template="led">
+                            <div class="template-name">LED панели (офис)</div>
+                            <div class="template-count">8 позиций</div>
+                        </div>
+                        <div class="template-item" data-template="outdoor">
+                            <div class="template-name">Уличное освещение</div>
+                            <div class="template-count">12 позиций</div>
+                        </div>
+                        <div class="template-item" data-template="warehouse">
+                            <div class="template-name">Склад (стандарт)</div>
+                            <div class="template-count">15 позиций</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Опции -->
+            <div class="options-row">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="bulkAddAsSeparate" checked>
+                    <span>Добавлять дубли как отдельные позиции</span>
+                </label>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" id="bulkAutoValidate" checked>
+                    <span>Проверять наличие перед добавлением</span>
+                </label>
+            </div>
+
+            <!-- Превью (опционально) -->
+            <div class="preview-section" id="bulkPreviewSection">
+                <div class="preview-header">
+                    <div class="preview-title">📋 Предпросмотр (будет добавлено):</div>
+                    <button class="quick-btn" id="btnBulkClosePreview" style="padding: 4px 8px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="preview-list" id="bulkPreviewList">
+                    <!-- Динамический контент -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div class="bulk-footer">
+            <button class="bulk-btn bulk-btn-secondary" onclick="closeBulkAddModal()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+                Отменить
+            </button>
+
+            <button class="bulk-btn bulk-btn-primary" id="btnBulkAddFromList">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Добавить из списка
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Скрытый input для загрузки файлов -->
+<input type="file" id="bulkFileInput" class="file-input" accept=".txt,.csv,.xlsx,.xls" style="display:none;">

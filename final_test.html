@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>✅ ФИНАЛЬНЫЙ ТЕСТ - Сворачивание КП</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5; 
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-header {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .test-step {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .test-step h4 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+        
+        .test-result {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .test-result.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        .mobile-test {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+        
+        .mobile-test h4 {
+            color: #856404;
+            margin: 0 0 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>✅ ФИНАЛЬНЫЙ ТЕСТ</h1>
+            <h2>Сворачивание кнопки "Загрузить из профиля Битрикс"</h2>
+        </div>
+        
+        <div class="test-step">
+            <h4>🎯 Цель теста:</h4>
+            <p>Проверить, что кнопка "Загрузить из профиля Битрикс" сворачивается вместе с информацией о КП на мобильных устройствах.</p>
+        </div>
+        
+        <div class="test-step">
+            <h4>📋 Что было изменено:</h4>
+            <ul>
+                <li>✅ Кнопка перемещена из <code>kp-info-header-row</code> в <code>kp-info-content</code></li>
+                <li>✅ Создан блок <code>kp-info-actions</code> для группировки кнопки</li>
+                <li>✅ Обновлены CSS стили для мобильных устройств</li>
+                <li>✅ Исправлена функция <code>toggleKpInfo</code> в <code>ui.js</code></li>
+                <li>✅ Удалена дублирующая функция из <code>index.php</code></li>
+            </ul>
+        </div>
+        
+        <div class="test-step">
+            <h4>🧪 Инструкции для тестирования:</h4>
+            <ol>
+                <li><strong>Откройте главную страницу генератора КП</strong></li>
+                <li><strong>Найдите блок "Информация о КП"</strong></li>
+                <li><strong>Убедитесь, что кнопка "Загрузить из профиля Битрикс" видна</strong></li>
+                <li><strong>Нажмите кнопку "Информация о КП" для сворачивания</strong></li>
+                <li><strong>Проверьте: кнопка "Загрузить из профиля Битрикс" должна исчезнуть</strong></li>
+                <li><strong>Нажмите снова - кнопка должна появиться</strong></li>
+            </ol>
+        </div>
+        
+        <div class="mobile-test">
+            <h4>📱 Тест на мобильном устройстве:</h4>
+            <p>1. Уменьшите ширину браузера до размера мобильного устройства (&lt; 768px)</p>
+            <p>2. Повторите тест сворачивания</p>
+            <p>3. Убедитесь, что кнопки занимают всю ширину экрана</p>
+            <p>4. Проверьте, что кнопка "Загрузить из профиля Битрикс" все еще сворачивается</p>
+        </div>
+        
+        <div class="test-step">
+            <h4>🔍 Проверка HTML структуры:</h4>
+            <p>Убедитесь, что в HTML коде:</p>
+            <pre><code>&lt;div class="kp-info-content" id="kpInfoContent"&gt;
+    &lt;div class="kp-info-actions"&gt;
+        &lt;button class="btn-bitrix-profile"&gt;Загрузить из профиля Битрикс&lt;/button&gt;
+    &lt;/div&gt;
+    &lt;!-- остальные поля формы --&gt;
+&lt;/div&gt;</code></pre>
+        </div>
+        
+        <div class="test-step">
+            <h4>🎨 Проверка CSS стилей:</h4>
+            <p>Убедитесь, что в CSS есть:</p>
+            <pre><code>.kp-info-actions {
+    padding: 16px 24px;
+    background: #f8f9fa;
+    border-bottom: 1px solid var(--border-light);
+}
+
+@media (max-width: 768px) {
+    .kp-info-actions {
+        padding: 12px 16px !important;
+    }
+}</code></pre>
+        </div>
+        
+        <div class="test-step">
+            <h4>⚙️ Проверка JavaScript:</h4>
+            <p>Убедитесь, что функция <code>toggleKpInfo</code> в <code>ui.js</code>:</p>
+            <ul>
+                <li>✅ Использует правильный ID: <code>"kpInfoContent"</code></li>
+                <li>✅ Использует правильные классы: <code>"kp-info-content--visible"</code> и <code>"kp-info-content--hidden"</code></li>
+                <li>✅ Поворачивает стрелку при сворачивании</li>
+                <li>✅ Сохраняет состояние в localStorage</li>
+            </ul>
+        </div>
+        
+        <div class="test-result">
+            ✅ <strong>ОЖИДАЕМЫЙ РЕЗУЛЬТАТ:</strong> Кнопка "Загрузить из профиля Битрикс" должна сворачиваться вместе с формой КП на всех устройствах, включая мобильные.
+        </div>
+        
+        <div class="test-step">
+            <h4>🚀 Дополнительные тесты:</h4>
+            <p>Для полной проверки также протестируйте:</p>
+            <ul>
+                <li>🔄 Сохранение состояния сворачивания при перезагрузке страницы</li>
+                <li>📱 Корректное отображение на разных размерах экрана</li>
+                <li>⌨️ Работу с клавиатуры (accessibility)</li>
+                <li>🎯 Правильную работу анимации стрелки</li>
+            </ul>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button onclick="window.open('test_collapse.html', '_blank')">🧪 Открыть интерактивный тест</button>
+            <button onclick="window.open('test_state.html', '_blank')">🔍 Открыть тест состояния</button>
+        </div>
+    </div>
+</body>
+</html>

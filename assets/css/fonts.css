@@ -1,0 +1,90 @@
+/**
+ * ============================================================
+ * MUSEO SANS CYRILLIC - Font Faces
+ * ============================================================
+ */
+
+/* Museo Sans Cyrillic 100 (Thin) */
+@font-face {
+    font-family: 'Museo Sans Cyrl';
+    src: url('../Fonts/museo_sans_cyrl_100.woff') format('woff');
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Museo Sans Cyrl';
+    src: url('../Fonts/museo_sans_cyrl_100_ital.woff') format('woff');
+    font-weight: 100;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* Museo Sans Cyrillic 300 (Light) */
+@font-face {
+    font-family: 'Museo Sans Cyrl';
+    src: url('../Fonts/museo_sans_cyrl_300.woff') format('woff');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Museo Sans Cyrl';
+    src: url('../Fonts/museo_sans_cyrl_300_ital.woff') format('woff');
+    font-weight: 300;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* Museo Sans Cyrillic 500 (Medium/Regular) */
+@font-face {
+    font-family: 'Museo Sans Cyrl';
+    src: url('../Fonts/museo_sans_cyrl_500.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Museo Sans Cyrl';
+    src: url('../Fonts/museo_sans_cyrl_500_ital.woff') format('woff');
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* Museo Sans Cyrillic 700 (Bold) */
+@font-face {
+    font-family: 'Museo Sans Cyrl';
+    src: url('../Fonts/museo_sans_cyrl_700.woff') format('woff');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Museo Sans Cyrl';
+    src: url('../Fonts/museo_sans_cyrl_700_ital.woff') format('woff');
+    font-weight: 700;
+    font-style: italic;
+    font-display: swap;
+}
+
+/* Museo Sans Cyrillic 900 (Black) */
+@font-face {
+    font-family: 'Museo Sans Cyrl';
+    src: url('../Fonts/museo_sans_cyrl_900.woff') format('woff');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Museo Sans Cyrl';
+    src: url('../Fonts/museo_sans_cyrl_900_ital.woff') format('woff');
+    font-weight: 900;
+    font-style: italic;
+    font-display: swap;
+}
