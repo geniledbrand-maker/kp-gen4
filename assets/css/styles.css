@@ -969,8 +969,14 @@ tfoot .total-row td { border: none; padding: 0; }
    DRAG AND DROP - Перетаскивание строк
    ============================================================================ */
 @media screen and (min-width: 901px) {
-    #kpWrap tbody tr{ cursor:grab; transition: background .2s ease, box-shadow .2s ease; }
-    #kpWrap tbody tr:active{ cursor:grabbing; }
+    @media screen and (min-width: 901px) {
+        #kpWrap tbody tr{
+            cursor: default !important;  /* ← Убираем grab со всей строки */
+            transition: background .2s ease, box-shadow .2s ease;
+        }
+        #kpWrap tbody tr:active{
+            cursor: default !important;  /* ← Убираем grabbing */
+        }
     #kpWrap tbody tr.sortable-ghost{ opacity:.4; background:#e8d4f5 !important; }
     #kpWrap tbody tr.sortable-drag{ opacity:1; background:#fff !important; box-shadow:0 8px 24px rgba(114,46,133,.3) !important; transform:rotate(2deg); }
     #kpWrap tbody tr.sortable-chosen{ background:#f9f6fb !important; }
@@ -1244,4 +1250,24 @@ tbody td:nth-child(2) img,
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+    /*Перетаскивание dragndrop*/
+    tbody tr td:first-child {
+        cursor: grab !important;  /* ← Оставляем ладошку на первом столбце */
+        user-select: none;
+    }
+
+    tbody tr td:first-child:active {
+        cursor: grabbing !important;  /* ← При перетаскивании */
+    }
+
+    tbody tr td:first-child:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    /* Убираем ладошку с остальных столбцов */
+    tbody tr td:not(:first-child) {
+        cursor: text !important;  /* ← Обычный курсор на всех остальных ячейках */
+    } /*end*/
 }

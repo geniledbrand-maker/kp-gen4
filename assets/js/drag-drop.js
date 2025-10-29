@@ -36,7 +36,7 @@ function initDragDrop() {
     sortableInstance = new Sortable(tbody, {
         animation: 200,
         easing: 'cubic-bezier(0.25, 0.8, 0.25, 1)',
-        handle: 'tr', // Вся строка - handle
+        handle: 'td:first-child', // Только первый столбец
         ghostClass: 'sortable-ghost',
         chosenClass: 'sortable-chosen',
         dragClass: 'sortable-drag',
